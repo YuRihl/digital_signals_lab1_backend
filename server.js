@@ -13,7 +13,7 @@ const server = http.createServer(async function (request, response) {
     let requestObject = Object.fromEntries(new URLSearchParams(userUrl.search).entries());
 
     response.end(JSON.stringify(calculateAll(requestObject)));
-})
+});
 
 server.listen(8080, () => {
     let {address, port} = server.address();
@@ -31,6 +31,8 @@ function calculateAll({from, to, iterations, precision}){
         fourierY: [],
     };
 
+    fs.writeFileSync('fourier.txt', `Number of iterations: ${iterations}\n`);
+
     for(let i = from; i < to; i += 2 * Math.PI){
         let localTo = i + 2 * Math.PI;
         
@@ -41,18 +43,21 @@ function calculateAll({from, to, iterations, precision}){
         }
     }
 
+    fs.appendFileSync('fourier.txt', `Average innacuracy is ${Math.abs(result.functionY.reduce( (sum, element) => sum += element, 0) / result.functionY.length 
+    - result.fourierY.reduce( (sum, element) => sum += element, 0) / result.fourierY.length)}`);
+
     return result;
 }
 
 function calculateFourier(x, from, to, iterations, precision){
     const a0 = calculateA(0, from, to);
+    fs.appendFileSync('fourier.txt', `a[0] = ${a0}    b[0] = 0\n`);
+
     let sum = 0,
         previousSum = 1;
     let i = 1;
 
-    fs.writeFileSync('fourier.txt', `Number of iterations: ${iterations}\n`);
-
-    while(Math.abs(sum - previousSum) > precision && i <= iterations){
+    while(Math.abs(sum - previousSum) >= precision && i <= iterations){
         const a = calculateA(i, from, to);
         const b = calculateB(i, from, to);
 
@@ -63,7 +68,7 @@ function calculateFourier(x, from, to, iterations, precision){
         i++;
     }
 
-    fs.appendFileSync('fourier.txt', `Average innacuracy is ${(sum + a0 / 2) / iterations}\n`);
+    fs.appendFileSync('fourier.txt', '\n');
     
     return a0 / 2 + sum;
 }
@@ -75,7 +80,7 @@ function calculateA(k, from, to){
         return x > from && x <= middle ? 0 : x * Math.cos(k * x);
     }
 
-    return (1 / Math.PI) * (Integral.integrate(integralFunction, from, middle) + Integral.integrate(integralFunction, middle, to));
+    return (1 / Math.PI) * Integral.integrate(integralFunction, from, to);
 }
 
 function calculateB(k, from, to){
@@ -85,7 +90,7 @@ function calculateB(k, from, to){
         return x > from && x <= middle ? 0 : x * Math.sin(k * x);
     }
 
-    return (1 / Math.PI) * (Integral.integrate(integralFunction, from, middle) + Integral.integrate(integralFunction, middle, to));
+    return (1 / Math.PI) * Integral.integrate(integralFunction, from, to);
 }
 
 function parsePI(string = ''){

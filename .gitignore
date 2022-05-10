@@ -1,1 +1,8 @@
+#packages
 node_modules/
+
+#vscode debug
+.vscode/
+
+#file output
+fourier.txt
